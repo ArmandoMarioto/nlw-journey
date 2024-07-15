@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { DateRange } from "react-day-picker";
 import { useNavigate } from "react-router-dom";
+import { api } from "../../lib/axios";
 import { ConfirmTripModal } from "./confirm-trip-modal";
 import { InviteGuestsModal } from "./invite-guests-modal";
 import { DestinationAndDateStep } from "./steps/destination-and-date-step";
@@ -11,6 +13,11 @@ export function CreateTripPage() {
   const [isConfirmTripModalOpen, setIsConfirmTripModalOpen] = useState(false);
 
   const [emailsToInvite, setEmailsToInvite] = useState<string[]>([]);
+
+  const [destination, setDestination] = useState<string>("");
+  const [range, setRange] = useState<DateRange | undefined>();
+  const [ownerName, setOwnerName] = useState<string>("");
+  const [ownerEmail, setOwnerEmail] = useState<string>("");
 
   function handleGuestsInputClick() {
     setIsGuestsInputOpen(!isGuestsInputOpen);
@@ -43,9 +50,36 @@ export function CreateTripPage() {
     );
   };
 
-  function createTrip(event: React.FormEvent<HTMLFormElement>) {
+  async function createTrip(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    navigate("/trips/1");
+
+    console.log(destination);
+    console.log(range?.from);
+    console.log(range?.to);
+    console.log(ownerName);
+    console.log(ownerEmail);
+    console.log(emailsToInvite);
+
+    if (
+      !destination ||
+      !range ||
+      !ownerName ||
+      !ownerEmail ||
+      emailsToInvite.length === 0
+    ) {
+      return;
+    }
+
+    const response = await api.post("/trips", {
+      destination,
+      starts_at: range.from,
+      ends_at: range.to,
+      emails_to_invite: emailsToInvite,
+      owner_name: ownerName,
+      owner_email: ownerEmail,
+    });
+    const { tripId } = response.data;
+    navigate(`/trips/${tripId}`);
   }
   return (
     <div className="h-screen flex items-center justify-center bg-pattern bg-no-repeat bg-center">
@@ -60,6 +94,9 @@ export function CreateTripPage() {
           <DestinationAndDateStep
             handleGuestsInputClick={handleGuestsInputClick}
             isGuestsInputOpen={isGuestsInputOpen}
+            setDestination={setDestination}
+            range={range}
+            setRange={setRange}
           />
           {isGuestsInputOpen && (
             <InviteGuestsStep
@@ -99,6 +136,8 @@ export function CreateTripPage() {
         <ConfirmTripModal
           createTrip={createTrip}
           handleConfirmTripModalClick={handleConfirmTripModalClick}
+          setOwnerName={setOwnerName}
+          setOwnerEmail={setOwnerEmail}
         />
       )}
     </div>
